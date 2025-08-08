@@ -1,4 +1,8 @@
 require('dotenv').config();
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ksusmolyar.github.io'
+];
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -53,7 +57,13 @@ if (isProd) {
 
 // CORS
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // для запросов без origin (curl, Postman)
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 
