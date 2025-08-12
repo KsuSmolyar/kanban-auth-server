@@ -44,7 +44,7 @@ if (isProd) app.set('trust proxy', 1);
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://ksusmolyar.github.io',
+  // 'https://ksusmolyar.github.io',
 ];
 
 const corsOptions = {
