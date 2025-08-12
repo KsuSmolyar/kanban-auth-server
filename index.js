@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 4000;
 // const DOMAIN = process.env.NODE_ENV === "production"
 //       ? process.env.COOKIE_DOMAIN_PROD
 //       : process.env.COOKIE_DOMAIN_LOCAL;
-const DOMAIN = process.env.COOKIE_DOMAIN_LOCAL;
+const DOMAIN = "localhost";
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
 
