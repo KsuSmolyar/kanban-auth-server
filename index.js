@@ -14,10 +14,10 @@ const { Pool } = require('pg');
 
 // --- Конфигурация ---
 const PORT = process.env.PORT || 4000;
-// const DOMAIN = process.env.NODE_ENV === "production"
-//       ? process.env.COOKIE_DOMAIN_PROD
-//       : process.env.COOKIE_DOMAIN_LOCAL;
-const DOMAIN = "localhost";
+const DOMAIN = process.env.NODE_ENV === "production"
+      ? process.env.COOKIE_DOMAIN_PROD
+      : process.env.COOKIE_DOMAIN_LOCAL;
+// const DOMAIN = "localhost";
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
 
@@ -164,6 +164,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
 
     await addRefreshToken({ tokenId, userId: user.id, token: refresh });
 
+    console.log('Setting cookie with domain:', DOMAIN);
     res.cookie('access', access, cookieOptions(15 * 60 * 1000));
     res.cookie('refresh', refresh, cookieOptions(7 * 24 * 3600 * 1000));
 
