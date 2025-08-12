@@ -121,6 +121,7 @@ async function addRefreshToken({ tokenId, userId, token }) {
 }
 
 async function findRefreshRecord(tokenId) {
+  console.log('tokenId', tokenId)
   const res = await pool.query('SELECT * FROM refresh_tokens WHERE token_id = $1', [tokenId]);
   console.log('res', res)
   return res.rows[0];
