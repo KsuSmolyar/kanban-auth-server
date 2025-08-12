@@ -40,17 +40,9 @@ app.use(helmet());
 if (isProd) app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'https://ksusmolyar.github.io'
-    ];
-    if (!origin) return callback(null, true);
-    if (!allowedOrigins.includes(origin)) {
-      return callback(new Error('Not allowed by CORS'), false);
-    }
-    return callback(null, true);
-  },
+  origin: isProd
+    ? ['https://ksusmolyar.github.io'] // список продакшн-оригинов
+    : 'http://localhost:5173',         // для девелопмента один origin
   credentials: true,
 }));
 
@@ -74,12 +66,12 @@ const signRefresh = (user, tokenId) =>
 const cookieOptions = (maxAgeMs) => {
   const base = {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,                   // в деве false, в проде true
+    sameSite: isProd ? 'none' : 'lax', // в деве lax, в проде none
     maxAge: maxAgeMs,
   };
   if (isProd && DOMAIN) {
-    base.domain = DOMAIN;
+    base.domain = DOMAIN;             // domain только в проде, если задан
   }
   return base;
 };
@@ -259,12 +251,20 @@ app.post('/api/auth/logout', async (req, res) => {
       }
     }
 
-    res.clearCookie('access', { domain: DOMAIN, secure: isProd, sameSite: isProd ? 'none' : 'lax' });
-    res.clearCookie('refresh', { domain: DOMAIN, secure: isProd, sameSite: isProd ? 'none' : 'lax' });
-    res.json({ ok: true });
+    res.clearCookie('access', {
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd && DOMAIN ? DOMAIN : undefined,
+    });
+    res.clearCookie('refresh', {
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd && DOMAIN ? DOMAIN : undefined,
+    });
+     res.json({ ok: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).end();
+      console.error(err);
+      res.status(500).end();
   }
 });
 
