@@ -291,6 +291,6 @@ app.post('/api/auth/logout', async (req, res) => {
 //   }
 // }
 
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
   console.log(`Auth server started on http://localhost:${PORT} (NODE_ENV=${NODE_ENV})`);
 });
