@@ -86,7 +86,7 @@ const cookieOptions = (maxAgeMs) => {
     sameSite: isProd ? 'none' : 'lax', // в деве lax, в проде none
     maxAge: maxAgeMs,
   };
-  if (isProd && DOMAIN) {
+  if (DOMAIN) {
     base.domain = DOMAIN;             // domain только в проде, если задан
   }
   return base;
