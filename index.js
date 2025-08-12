@@ -83,7 +83,7 @@ const cookieOptions = (maxAgeMs) => {
   const base = {
     httpOnly: true,
     secure: isProd,                   // в деве false, в проде true
-    sameSite: isProd ? 'none' : 'lax', // в деве lax, в проде none
+    sameSite: 'none', // в деве lax, в проде none
     maxAge: maxAgeMs,
   };
   if (DOMAIN) {
