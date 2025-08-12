@@ -14,10 +14,9 @@ const { Pool } = require('pg');
 
 // --- Конфигурация ---
 const PORT = process.env.PORT || 4000;
-const DOMAIN = process.env.NODE_ENV === "production"
-      ? process.env.COOKIE_DOMAIN_PROD
-      : process.env.COOKIE_DOMAIN_LOCAL;
-// const DOMAIN = "localhost";
+// const DOMAIN = process.env.NODE_ENV === "production"
+//       ? process.env.COOKIE_DOMAIN_PROD
+//       : process.env.COOKIE_DOMAIN_LOCAL;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
 
@@ -42,23 +41,27 @@ const app = express();
 app.use(helmet());
 if (isProd) app.set('trust proxy', 1);
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://ksusmolyar.github.io',
-];
+// const allowedOrigins = [
+//   'http://localhost:5173',
+//   'https://ksusmolyar.github.io',
+// ];
 
-const corsOptions = {
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    callback(null, false); // вместо ошибки
-  },
-  credentials: true,
-};
+// const corsOptions = {
+//   origin: function(origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     }
+//     callback(null, false); // вместо ошибки
+//   },
+//   credentials: true,
+// };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+app.use(cors({
+  origin: "https://ksusmolyar.github.io",
+  credentials: true
+}));
 
 // Обработка preflight запросов OPTIONS для всех маршрутов
 // app.options('*', cors(corsOptions));
@@ -84,12 +87,12 @@ const cookieOptions = (maxAgeMs) => {
   const base = {
     httpOnly: true,
     secure: isProd,                   // в деве false, в проде true
-    sameSite: 'none', // в деве lax, в проде none
+    sameSite: isProd ? 'none' : "lax", // в деве lax, в проде none
     maxAge: maxAgeMs,
   };
-  if (DOMAIN) {
-    base.domain = DOMAIN;             // domain только в проде, если задан
-  }
+  // if (DOMAIN) {
+  //   base.domain = DOMAIN;             // domain только в проде, если задан
+  // }
   return base;
 };
 
