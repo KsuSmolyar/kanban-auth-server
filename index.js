@@ -125,9 +125,9 @@ async function addRefreshToken({ tokenId, userId, token }) {
 }
 
 async function findRefreshRecord(tokenId) {
-  console.log('tokenId', tokenId)
-  const res = await pool.query('SELECT * FROM refresh_tokens WHERE user_id = $1', [tokenId]);
-  console.log('res', res)
+  // console.log('tokenId', tokenId)
+  const res = await pool.query('SELECT * FROM refresh_tokens WHERE token_id = $1', [tokenId]);
+  console.log('RES FROM findRefreshRecord', res)
   return res.rows[0];
 }
 
@@ -204,7 +204,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
 app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
-    console.log('req.user', req.user)
+    // console.log('req.user', req.user)
     const user = await findUserById(req.user.id);
     if (!user) return res.status(404).end();
     res.json({ id: user.id, name: user.name, email: user.email });
@@ -217,6 +217,7 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 app.post('/api/auth/refresh', async (req, res) => {
   try {
     const token = req.cookies.refresh;
+    console.log("TOKEN:::", token)
     if (!token) return res.status(401).end();
 
     let payload;
