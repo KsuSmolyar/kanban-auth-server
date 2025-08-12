@@ -167,7 +167,6 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
 
     await addRefreshToken({ tokenId, userId: user.id, token: refresh });
 
-    console.log('Setting cookie with domain:', DOMAIN);
     res.cookie('access', access, cookieOptions(15 * 60 * 1000));
     res.cookie('refresh', refresh, cookieOptions(7 * 24 * 3600 * 1000));
 
@@ -193,7 +192,6 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     await addRefreshToken({ tokenId, userId: user.id, token: refresh });
 
-    console.log('Setting cookie with domain:', DOMAIN);
     res.cookie('access', access, cookieOptions(15 * 60 * 1000));
     res.cookie('refresh', refresh, cookieOptions(7 * 24 * 3600 * 1000));
 
@@ -253,7 +251,6 @@ app.post('/api/auth/refresh', async (req, res) => {
 
     const newAccess = signAccess(user);
 
-    console.log('Setting cookie with domain:', DOMAIN);
     res.cookie('access', newAccess, cookieOptions(15 * 60 * 1000));
     res.cookie('refresh', newRefresh, cookieOptions(7 * 24 * 3600 * 1000));
 
@@ -281,12 +278,12 @@ app.post('/api/auth/logout', async (req, res) => {
     res.clearCookie('access', {
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      domain: isProd && DOMAIN ? DOMAIN : undefined,
+      // domain: isProd && DOMAIN ? DOMAIN : undefined,
     });
     res.clearCookie('refresh', {
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      domain: isProd && DOMAIN ? DOMAIN : undefined,
+      // domain: isProd && DOMAIN ? DOMAIN : undefined,
     });
      res.json({ ok: true });
   } catch (err) {
