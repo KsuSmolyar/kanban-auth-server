@@ -122,7 +122,7 @@ async function addRefreshToken({ tokenId, userId, token }) {
 
 async function findRefreshRecord(tokenId) {
   console.log('tokenId', tokenId)
-  const res = await pool.query('SELECT * FROM refresh_tokens WHERE user_id = $1', ['b6e927a6-dfb4-4e27-a4ea-c51015d00434']);
+  const res = await pool.query('SELECT * FROM refresh_tokens WHERE user_id = $1', [tokenId]);
   console.log('res', res)
   return res.rows[0];
 }
@@ -221,7 +221,7 @@ app.post('/api/auth/refresh', async (req, res) => {
       return res.status(401).end();
     }
     console.log('payload', payload)
-    const record = await findRefreshRecord(payload.tokenId);
+    const record = await findRefreshRecord(payload.id);
   console.log('record', record)
 
     if (!record) return res.status(401).end();
