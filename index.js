@@ -208,7 +208,6 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 });
 
 app.post('/api/auth/refresh', async (req, res) => {
-  console.log('request cookies', req.cookies)
   try {
     const token = req.cookies.refresh;
     if (!token) return res.status(401).end();
@@ -219,8 +218,10 @@ app.post('/api/auth/refresh', async (req, res) => {
     } catch {
       return res.status(401).end();
     }
-
+    console.log('payload', payload)
     const record = await findRefreshRecord(payload.tokenId);
+  console.log('record', record)
+
     if (!record) return res.status(401).end();
 
     if (record.expires_at && Date.now() > Number(record.expires_at)) {
@@ -229,6 +230,7 @@ app.post('/api/auth/refresh', async (req, res) => {
     }
 
     const match = await bcrypt.compare(token, record.token_hash);
+    console.log('match', match)
     if (!match) {
       await removeRefreshToken(payload.tokenId);
       return res.status(401).end();
@@ -237,6 +239,7 @@ app.post('/api/auth/refresh', async (req, res) => {
     await removeRefreshToken(payload.tokenId);
 
     const user = await findUserById(payload.id);
+    console.log('user', user)
     if (!user) return res.status(401).end();
 
     const newTokenId = uuidv4();
