@@ -44,7 +44,7 @@ if (isProd) app.set('trust proxy', 1);
 
 const allowedOrigins = [
   'http://localhost:5173',
-  // 'https://ksusmolyar.github.io',
+  'https://ksusmolyar.github.io',
 ];
 
 const corsOptions = {
@@ -190,6 +190,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     await addRefreshToken({ tokenId, userId: user.id, token: refresh });
 
+    console.log('Setting cookie with domain:', DOMAIN);
     res.cookie('access', access, cookieOptions(15 * 60 * 1000));
     res.cookie('refresh', refresh, cookieOptions(7 * 24 * 3600 * 1000));
 
@@ -248,6 +249,8 @@ app.post('/api/auth/refresh', async (req, res) => {
     await addRefreshToken({ tokenId: newTokenId, userId: user.id, token: newRefresh });
 
     const newAccess = signAccess(user);
+
+    console.log('Setting cookie with domain:', DOMAIN);
     res.cookie('access', newAccess, cookieOptions(15 * 60 * 1000));
     res.cookie('refresh', newRefresh, cookieOptions(7 * 24 * 3600 * 1000));
 
