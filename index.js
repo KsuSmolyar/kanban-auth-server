@@ -39,12 +39,26 @@ const app = express();
 app.use(helmet());
 if (isProd) app.set('trust proxy', 1);
 
-app.use(cors({
-  origin: isProd
-    ? ['https://ksusmolyar.github.io'] // список продакшн-оригинов
-    : 'http://localhost:5173',         // для девелопмента один origin
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ksusmolyar.github.io',
+];
+
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(null, false); // вместо ошибки
+  },
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
+
+// Обработка preflight запросов OPTIONS для всех маршрутов
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -269,13 +283,13 @@ app.post('/api/auth/logout', async (req, res) => {
 });
 
 // --- Раздача клиента ---
-if (process.env.SERVE_CLIENT === 'true') {
-  const clientDist = path.join(__dirname, 'client', 'dist');
-  if (fs.existsSync(clientDist)) {
-    app.use(express.static(clientDist));
-    app.get('*', (_, res) => res.sendFile(path.join(clientDist, 'index.html')));
-  }
-}
+// if (process.env.SERVE_CLIENT === 'true') {
+//   const clientDist = path.join(__dirname, 'client', 'dist');
+//   if (fs.existsSync(clientDist)) {
+//     app.use(express.static(clientDist));
+//     app.get('*', (_, res) => res.sendFile(path.join(clientDist, 'index.html')));
+//   }
+// }
 
 app.listen(PORT, () => {
   console.log(`Auth server started on http://localhost:${PORT} (NODE_ENV=${NODE_ENV})`);
