@@ -208,7 +208,7 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 });
 
 app.post('/api/auth/refresh', async (req, res) => {
-  console.log('request cookies', req)
+  console.log('request cookies', req.cookies)
   try {
     const token = req.cookies.refresh;
     if (!token) return res.status(401).end();
