@@ -71,13 +71,18 @@ const signAccess = (user) =>
 const signRefresh = (user, tokenId) =>
   jwt.sign({ id: user.id, tokenId }, REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES });
 
-const cookieOptions = (maxAgeMs) => ({
-  httpOnly: true,
-  secure: isProd,
-  sameSite: isProd ? 'none' : 'lax',
-  domain: DOMAIN,
-  maxAge: maxAgeMs,
-});
+const cookieOptions = (maxAgeMs) => {
+  const base = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    maxAge: maxAgeMs,
+  };
+  if (isProd && DOMAIN) {
+    base.domain = DOMAIN;
+  }
+  return base;
+};
 
 // --- DB функции ---
 async function findUserByEmail(email) {
