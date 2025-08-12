@@ -200,6 +200,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
 app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
+    console.log('req.user', req.user)
     const user = await findUserById(req.user.id);
     if (!user) return res.status(404).end();
     res.json({ id: user.id, name: user.name, email: user.email });
