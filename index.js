@@ -14,9 +14,6 @@ const { Pool } = require('pg');
 
 // --- Конфигурация ---
 const PORT = process.env.PORT || 4000;
-// const DOMAIN = process.env.NODE_ENV === "production"
-//       ? process.env.COOKIE_DOMAIN_PROD
-//       : process.env.COOKIE_DOMAIN_LOCAL;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
 
@@ -58,14 +55,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// app.use(cors({
-//   origin: "https://ksusmolyar.github.io",
-//   credentials: true
-// }));
-
-// Обработка preflight запросов OPTIONS для всех маршрутов
-// app.options('*', cors(corsOptions));
-
 app.use(express.json());
 app.use(cookieParser());
 
@@ -90,9 +79,6 @@ const cookieOptions = (maxAgeMs) => {
     sameSite: isProd ? 'none' : "lax", // в деве lax, в проде none
     maxAge: maxAgeMs,
   };
-  // if (DOMAIN) {
-  //   base.domain = DOMAIN;             // domain только в проде, если задан
-  // }
   return base;
 };
 
@@ -214,41 +200,33 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 app.post('/api/auth/refresh', async (req, res) => {
   try {
     const token = req.cookies.refresh;
-    // if (!token) return res.status(401).end();
     if (!token) return res.status(401).json({ message: 'Refresh token not found' });
 
     let payload;
     try {
       payload = jwt.verify(token, REFRESH_SECRET);
     } catch {
-      // return res.status(401).end();
       return res.status(401).json({ message: 'Failed verify refresh token' });
     }
     const record = await findRefreshRecord(payload.tokenId);
 
-    // if (!record) return res.status(401).end();
     if (!record) return res.status(401).json({ message: 'Record not found' });
 
 
     if (record.expires_at && Date.now() > Number(record.expires_at)) {
       await removeRefreshToken(payload.tokenId);
-      // return res.status(401).end();
       return res.status(401).json({ message: 'Refresh token is expired' });
-
     }
 
     const match = await bcrypt.compare(token, record.token_hash);
     if (!match) {
       await removeRefreshToken(payload.tokenId);
-      // return res.status(401).end();
-      return res.status(401).json({ message: 'Refresh token not match' });
-
+      return res.status(401).json({ message: 'Refresh token not match' })
     }
 
     await removeRefreshToken(payload.tokenId);
 
     const user = await findUserById(payload.id);
-    // if (!user) return res.status(401).end();
     if (!user) return res.status(401).json({ message: 'User not found' });
 
 
@@ -285,12 +263,10 @@ app.post('/api/auth/logout', async (req, res) => {
     res.clearCookie('access', {
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      // domain: isProd && DOMAIN ? DOMAIN : undefined,
     });
     res.clearCookie('refresh', {
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      // domain: isProd && DOMAIN ? DOMAIN : undefined,
     });
      res.json({ ok: true });
   } catch (err) {
@@ -299,14 +275,121 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-// --- Раздача клиента ---
-// if (process.env.SERVE_CLIENT === 'true') {
-//   const clientDist = path.join(__dirname, 'client', 'dist');
-//   if (fs.existsSync(clientDist)) {
-//     app.use(express.static(clientDist));
-//     app.get('*', (_, res) => res.sendFile(path.join(clientDist, 'index.html')));
-//   }
-// }
+// ===================== TASKS =====================
+
+// Получить все задачи текущего пользователя
+app.get('/api/tasks', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at ASC',
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Создать новую задачу
+app.post('/api/tasks', authenticate, async (req, res) => {
+  try {
+    const { title, description, status } = req.body;
+    if (!title) return res.status(400).json({ message: 'Требуется title' });
+
+    const result = await pool.query(
+      `INSERT INTO tasks (title, description, status, user_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [title, description || '', status || 'todo', req.user.id]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Редактировать существующую задачу
+app.put('/api/tasks/:id', authenticate, async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const { title, description, status, deadline, tags } = req.body;
+
+    if (!title) return res.status(400).json({ message: 'Требуется title' });
+
+    // Обновляем задачу, только если она принадлежит текущему пользователю
+    const result = await pool.query(
+      `UPDATE tasks
+       SET title = $1,
+           description = $2,
+           status = $3,
+           deadline = $4,
+           tags = $5
+       WHERE id = $6 AND user_id = $7
+       RETURNING *`,
+      [
+        title,
+        description || '',
+        status || 'todo',
+        deadline || null,
+        tags || {},
+        taskId,
+        req.user.id
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Задача не найдена' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// ===================== COMMENTS =====================
+
+// Получить комментарии для задачи
+app.get('/api/comments/:taskId', authenticate, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const result = await pool.query(
+      `SELECT c.*, u.name AS user_name
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.task_id = $1
+       ORDER BY c.created_at ASC`,
+      [taskId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Добавить комментарий к задаче
+app.post('/api/comments/:taskId', authenticate, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ message: 'Требуется content' });
+
+    const result = await pool.query(
+      `INSERT INTO comments (task_id, user_id, content)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [taskId, req.user.id, content]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
 
 app.listen(PORT,'0.0.0.0', () => {
   console.log(`Auth server started on http://localhost:${PORT} (NODE_ENV=${NODE_ENV})`);

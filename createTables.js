@@ -28,6 +28,27 @@ const createTables = async () => {
         expires_at BIGINT NOT NULL,
         created_at BIGINT NOT NULL
       );
+
+      -- Таблица задач
+      CREATE TABLE IF NOT EXISTS tasks (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title TEXT NOT NULL,
+        description TEXT,
+        status VARCHAR(50) NOT NULL, -- например: 'todo', 'in-progress', 'done'
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        deadline TIMESTAMP WITH TIME ZONE,
+        tags TEXT[],
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      -- Таблица комментариев
+      CREATE TABLE IF NOT EXISTS comments (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+        author_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `);
     console.log('Таблицы успешно созданы или уже существуют');
   } catch (err) {
