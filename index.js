@@ -340,8 +340,8 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
         title,
         description || '',
         status || 'todo',
-        deadline || null,
-        tags || {},
+        deadline ? new Date(deadline) : null,               // конвертируем в Date
+        JSON.stringify(Array.isArray(tags) ? tags : []),
         taskId,
         req.user.id
       ]
