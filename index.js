@@ -214,33 +214,43 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 app.post('/api/auth/refresh', async (req, res) => {
   try {
     const token = req.cookies.refresh;
-    if (!token) return res.status(401).end();
+    // if (!token) return res.status(401).end();
+    if (!token) return res.status(401).json({ message: 'Refresh token not found' });
 
     let payload;
     try {
       payload = jwt.verify(token, REFRESH_SECRET);
     } catch {
-      return res.status(401).end();
+      // return res.status(401).end();
+      return res.status(401).json({ message: 'Failed verify refresh token' });
     }
     const record = await findRefreshRecord(payload.tokenId);
 
-    if (!record) return res.status(401).end();
+    // if (!record) return res.status(401).end();
+    if (!record) return res.status(401).json({ message: 'Record not found' });
+
 
     if (record.expires_at && Date.now() > Number(record.expires_at)) {
       await removeRefreshToken(payload.tokenId);
-      return res.status(401).end();
+      // return res.status(401).end();
+      return res.status(401).json({ message: 'Refresh token is expired' });
+
     }
 
     const match = await bcrypt.compare(token, record.token_hash);
     if (!match) {
       await removeRefreshToken(payload.tokenId);
-      return res.status(401).end();
+      // return res.status(401).end();
+      return res.status(401).json({ message: 'Refresh token not match' });
+
     }
 
     await removeRefreshToken(payload.tokenId);
 
     const user = await findUserById(payload.id);
-    if (!user) return res.status(401).end();
+    // if (!user) return res.status(401).end();
+    if (!user) return res.status(401).json({ message: 'User not found' });
+
 
     const newTokenId = uuidv4();
     const newRefresh = signRefresh(user, newTokenId);
