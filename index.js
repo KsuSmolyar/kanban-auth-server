@@ -306,13 +306,14 @@ app.post('/api/tasks', authenticate, async (req, res) => {
         description || '',
         status || 'todo',
         req.user.id,
-        deadline || null,
-        tags || []
+        deadline ? new Date(deadline) : null,               // конвертируем в Date
+        JSON.stringify(Array.isArray(tags) ? tags : [])
       ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    // console.error(err);
+    console.error('Ошибка при добавлении задачи:', err.message, err.stack);
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 });
