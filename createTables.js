@@ -36,10 +36,12 @@ const createTables = async () => {
         description TEXT,
         status VARCHAR(50) NOT NULL, -- например: 'todo', 'in-progress', 'done'
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        deadline TIMESTAMP WITH TIME ZONE,
-        tags TEXT[],
-        created_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+
+       -- Добавляем новые колонки, если их нет
+      ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deadline TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]';
 
       -- Таблица комментариев
       CREATE TABLE IF NOT EXISTS comments (
