@@ -41,27 +41,27 @@ const app = express();
 app.use(helmet());
 if (isProd) app.set('trust proxy', 1);
 
-// const allowedOrigins = [
-//   'http://localhost:5173',
-//   'https://ksusmolyar.github.io',
-// ];
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ksusmolyar.github.io',
+];
 
-// const corsOptions = {
-//   origin: function(origin, callback) {
-//     if (!origin) return callback(null, true);
-//     if (allowedOrigins.includes(origin)) {
-//       return callback(null, true);
-//     }
-//     callback(null, false); // вместо ошибки
-//   },
-//   credentials: true,
-// };
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(null, false); // вместо ошибки
+  },
+  credentials: true,
+};
 
-// app.use(cors(corsOptions));
-app.use(cors({
-  origin: "https://ksusmolyar.github.io",
-  credentials: true
-}));
+app.use(cors(corsOptions));
+// app.use(cors({
+//   origin: "https://ksusmolyar.github.io",
+//   credentials: true
+// }));
 
 // Обработка preflight запросов OPTIONS для всех маршрутов
 // app.options('*', cors(corsOptions));
@@ -125,9 +125,7 @@ async function addRefreshToken({ tokenId, userId, token }) {
 }
 
 async function findRefreshRecord(tokenId) {
-  // console.log('tokenId', tokenId)
   const res = await pool.query('SELECT * FROM refresh_tokens WHERE token_id = $1', [tokenId]);
-  console.log('RES FROM findRefreshRecord', res)
   return res.rows[0];
 }
 
@@ -204,7 +202,6 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
 app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
-    // console.log('req.user', req.user)
     const user = await findUserById(req.user.id);
     if (!user) return res.status(404).end();
     res.json({ id: user.id, name: user.name, email: user.email });
@@ -217,7 +214,6 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 app.post('/api/auth/refresh', async (req, res) => {
   try {
     const token = req.cookies.refresh;
-    console.log("TOKEN:::", token)
     if (!token) return res.status(401).end();
 
     let payload;
