@@ -294,7 +294,7 @@ app.get('/api/tasks', authenticate, async (req, res) => {
 // Создать новую задачу
 app.post('/api/tasks', authenticate, async (req, res) => {
   try {
-    const { title, description, status } = req.body;
+    const { title, description, status, deadline, tags } = req.body;
     if (!title) return res.status(400).json({ message: 'Требуется title' });
 
     const result = await pool.query(
