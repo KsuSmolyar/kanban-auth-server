@@ -298,9 +298,9 @@ app.post('/api/tasks', authenticate, async (req, res) => {
     if (!title) return res.status(400).json({ message: 'Требуется title' });
 
     const result = await pool.query(
-      `INSERT INTO tasks (title, description, status, user_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
+      `INSERT INTO tasks (title, description, status, user_id, deadline, tags)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *`,
       [title, description || '', status || 'todo', req.user.id]
     );
     res.status(201).json(result.rows[0]);
