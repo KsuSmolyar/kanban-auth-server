@@ -301,7 +301,14 @@ app.post('/api/tasks', authenticate, async (req, res) => {
       `INSERT INTO tasks (title, description, status, user_id, deadline, tags)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *`,
-      [title, description || '', status || 'todo', req.user.id]
+      [
+        title,
+        description || '',
+        status || 'todo',
+        req.user.id,
+        deadline || null,
+        tags || []
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
