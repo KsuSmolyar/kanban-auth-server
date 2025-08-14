@@ -210,7 +210,7 @@ app.post('/api/auth/refresh', async (req, res) => {
     }
     const record = await findRefreshRecord(payload.tokenId);
 
-    if (!record) return res.status(401).json({ message: `Record not found, payload: ${JSON.stringify(payload)}` });
+    if (!record) return res.status(401).json({ message: `Record not found`});
 
 
     if (record.expires_at && Date.now() > Number(record.expires_at)) {
@@ -375,7 +375,7 @@ app.get('/api/comments/:taskId', authenticate, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ message: 'Ошибка сервера', error: err.message });
   }
 });
 
