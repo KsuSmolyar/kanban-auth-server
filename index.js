@@ -432,6 +432,60 @@ app.post('/api/comments/:taskId', authenticate, async (req, res) => {
   }
 });
 
+// Удалить комментарий и вернуть актуальный список
+app.delete('/api/comments/:taskId/:commentId', authenticate, async (req, res) => {
+  try {
+    const { taskId, commentId } = req.params;
+
+    // Проверяем, что комментарий существует
+    const check = await pool.query(
+      `SELECT * FROM comments WHERE id = $1 AND task_id = $2`,
+      [commentId, taskId]
+    );
+
+    if (check.rowCount === 0) {
+      return res.status(404).json({ message: 'Комментарий не найден' });
+    }
+
+    // Проверка прав — удалять может только автор или админ
+    if (check.rows[0].author_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ message: 'Нет прав на удаление комментария' });
+    }
+
+    // Удаляем комментарий
+    await pool.query(
+      `DELETE FROM comments WHERE id = $1 AND task_id = $2`,
+      [commentId, taskId]
+    );
+
+    // Получаем актуальный список комментариев
+    const comments = await pool.query(
+      `SELECT 
+        c.id,
+        c.task_id,
+        c.author_id,
+        u.name AS user_name,
+        c.content,
+        c.created_at,
+        c.replied_comment_id,
+        parent_u.name AS replied_comment_author,
+        parent_c.content AS replied_comment_content
+      FROM comments c
+      JOIN users u ON c.author_id = u.id
+      LEFT JOIN comments parent_c ON c.replied_comment_id = parent_c.id
+      LEFT JOIN users parent_u ON parent_c.author_id = parent_u.id
+      WHERE c.task_id = $1
+      ORDER BY c.created_at ASC`,
+      [taskId]
+    );
+
+    res.status(200).json(comments.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
 app.listen(PORT,'0.0.0.0', () => {
   console.log(`Auth server started on http://localhost:${PORT} (NODE_ENV=${NODE_ENV})`);
 });
