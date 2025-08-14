@@ -367,7 +367,7 @@ app.get('/api/comments/:taskId', authenticate, async (req, res) => {
     const result = await pool.query(
       `SELECT c.*, u.name AS user_name
        FROM comments c
-       JOIN users u ON c.user_id = u.id
+       JOIN users u ON c.author_id = u.id
        WHERE c.task_id = $1
        ORDER BY c.created_at ASC`,
       [taskId]
