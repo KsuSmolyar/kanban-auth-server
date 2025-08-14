@@ -210,7 +210,7 @@ app.post('/api/auth/refresh', async (req, res) => {
     }
     const record = await findRefreshRecord(payload.tokenId);
 
-    if (!record) return res.status(401).json({ message: `Record not found, payload: ${payload}` });
+    if (!record) return res.status(401).json({ message: `Record not found, payload: ${JSON.stringify(payload)}` });
 
 
     if (record.expires_at && Date.now() > Number(record.expires_at)) {
