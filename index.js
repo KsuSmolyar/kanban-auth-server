@@ -397,37 +397,35 @@ app.post('/api/comments/:taskId', authenticate, async (req, res) => {
     const { content, repliedCommentId } = req.body;
     if (!content) return res.status(400).json({ message: 'Требуется content' });
 
-    const insertResult = await pool.query(
+    // 1. Вставляем новый комментарий
+    await pool.query(
       `INSERT INTO comments (task_id, author_id, content, replied_comment_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, task_id, author_id, content, created_at`,
+       VALUES ($1, $2, $3, $4)`,
       [taskId, req.user.id, content, repliedCommentId || null]
     );
 
-    const commentId = insertResult.rows[0].id;
-
     // Достаем комментарий с данными об авторе и, если есть, о родительском комментарии
-    const commentResult = await pool.query(
+    const commentsResult = await pool.query(
       `SELECT 
-          c.id, 
-          c.task_id, 
-          c.author_id, 
-          u.name AS user_name,
-          c.content, 
-          c.replied_comment_id,
-          rc.author_id AS replied_author_id,
-          ru.name AS replied_comment_author,
-          rc.content AS replied_comment_content,
-          c.created_at
-       FROM comments c
-       JOIN users u ON c.author_id = u.id
-       LEFT JOIN comments rc ON c.replied_comment_id = rc.id
-       LEFT JOIN users ru ON rc.author_id = ru.id
-       WHERE c.id = $1`,
-      [commentId]
+        c.id,
+        c.task_id,
+        c.author_id,
+        u.name AS user_name,
+        c.content,
+        c.created_at,
+        c.replied_comment_id,
+        parent_u.name AS replied_comment_author,
+        parent_c.content AS replied_comment_content
+      FROM comments c
+      JOIN users u ON c.author_id = u.id
+      LEFT JOIN comments parent_c ON c.replied_comment_id = parent_c.id
+      LEFT JOIN users parent_u ON parent_c.author_id = parent_u.id
+      WHERE c.task_id = $1
+      ORDER BY c.created_at ASC
+    `, [taskId]
     );
 
-    res.status(201).json(commentResult.rows[0]);
+    res.status(201).json(commentsResult.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Ошибка сервера' });
