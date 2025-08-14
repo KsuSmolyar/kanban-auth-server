@@ -51,6 +51,9 @@ const createTables = async () => {
         content TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE comments
+      ADD COLUMN replied_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE;
     `);
     console.log('Таблицы успешно созданы или уже существуют');
   } catch (err) {
