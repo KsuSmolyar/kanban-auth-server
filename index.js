@@ -387,12 +387,22 @@ app.post('/api/comments/:taskId', authenticate, async (req, res) => {
     if (!content) return res.status(400).json({ message: 'Требуется content' });
 
     const result = await pool.query(
-      `INSERT INTO comments (task_id, user_id, content)
+      `INSERT INTO comments (task_id, author_id, content)
        VALUES ($1, $2, $3)
-       RETURNING *`,
+       RETURNING id, task_id, author_id, content, created_at`,
       [taskId, req.user.id, content]
     );
-    res.status(201).json(result.rows[0]);
+
+    const comment = await pool.query(
+  `SELECT c.*, u.name AS user_name
+      FROM comments c
+      JOIN users u ON c.author_id = u.id
+      WHERE c.id = $1`,
+      [result.rows[0].id]
+    );
+
+    res.status(201).json(comment.rows[0]);
+    // res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Ошибка сервера' });
