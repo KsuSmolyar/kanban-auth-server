@@ -285,7 +285,7 @@ app.get('/api/tasks', authenticate, async (req, res) => {
         t.*,
         u.name AS author_name
       FROM tasks t
-      JOIN users u ON t.author_id = u.id
+      JOIN users u ON t.user_id = u.id
       ORDER BY t.created_at ASC`
     );
     res.json(result.rows);
