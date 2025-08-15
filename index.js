@@ -277,12 +277,16 @@ app.post('/api/auth/logout', async (req, res) => {
 
 // ===================== TASKS =====================
 
-// Получить все задачи текущего пользователя
+// Получить все задачи 
 app.get('/api/tasks', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at ASC',
-      [req.user.id]
+      `SELECT 
+        t.*,
+        u.name AS author_name
+      FROM tasks t
+      JOIN users u ON t.author_id = u.id
+      ORDER BY t.created_at ASC`
     );
     res.json(result.rows);
   } catch (err) {
@@ -357,6 +361,51 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 });
+
+app.delete('/api/tasks/:id', authenticate, async(req, res) => {
+  try {
+    const taskId = req.params.id;
+
+    // Проверяем, что задача существует
+    const check = await pool.query(
+      `SELECT * FROM tasks WHERE id = $1`,
+      [taskId]
+    );
+
+    if (check.rowCount === 0) {
+      return res.status(404).json({ message: 'Задача не найдена' });
+    }
+
+    // Проверка прав — удалять может автор или админ
+    if (check.rows[0].author_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ message: 'Нет прав на удаление задачи' });
+    }
+
+    // Удаляем задачу
+    await pool.query(`DELETE FROM tasks WHERE id = $1`, [taskId]);
+
+    // Получаем актуальный список задач
+    const tasks = await pool.query(
+      `SELECT 
+        t.id,
+        t.title,
+        t.description,
+        t.status,
+        t.author_id,
+        u.name AS author_name,
+        t.created_at,
+        t.updated_at
+      FROM tasks t
+      JOIN users u ON t.author_id = u.id
+      ORDER BY t.created_at ASC`
+    );
+
+    res.status(200).json(tasks.rows);
+  } catch (err) {
+    console.error(err);
+     res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+  }
+})
 
 // ===================== COMMENTS =====================
 
