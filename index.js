@@ -330,7 +330,7 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
 
     if (!title) return res.status(400).json({ message: 'Требуется title' });
 
-    // Обновляем задачу, только если она принадлежит текущему пользователю
+    // Обновляем задачу
     const result = await pool.query(
       `UPDATE tasks
        SET title = $1,
@@ -338,7 +338,7 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
            status = $3,
            deadline = $4,
            tags = $5
-       WHERE id = $6 AND user_id = $7
+       WHERE id = $6
        RETURNING *`,
       [
         title,
@@ -346,8 +346,7 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
         status || 'todo',
         deadline ? new Date(deadline) : null,               // конвертируем в Date
         JSON.stringify(Array.isArray(tags) ? tags : []),
-        taskId,
-        req.user.id
+        taskId
       ]
     );
 
@@ -355,7 +354,18 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Задача не найдена' });
     }
 
-    res.json(result.rows[0]);
+    // Получаем актуальный список всех задач
+    const allTasks = await pool.query(
+      `SELECT 
+        t.*,
+        u.name AS author_name
+      FROM tasks t
+      JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at ASC`
+    );
+
+    res.json(allTasks.rows);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Ошибка сервера' });
