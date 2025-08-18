@@ -386,11 +386,13 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
         u.name AS author_name
       FROM tasks t
       JOIN users u ON t.user_id = u.id
-      ORDER BY t.created_at ASC`
+      WHERE t.id = $1`,
+      [taskId]
     );
 
-    broadcast({ type: "task_updated", payload: updatedTask.rows });
-    res.json(updatedTask.rows);
+    const task = updatedTask.rows[0];
+    broadcast({ type: "task_updated", payload: task });
+    res.json(task);
 
   } catch (err) {
     console.error(err);
