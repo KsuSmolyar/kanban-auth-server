@@ -415,7 +415,7 @@ app.delete('/api/tasks/:id', authenticate, async(req, res) => {
     }
 
     // Проверка прав — удалять может автор или админ
-    if (check.rows[0].author_id !== req.user.id && !req.user.is_admin) {
+    if (check.rows[0].author_id !== req.user.id) {
       return res.status(403).json({ message: 'Нет прав на удаление задачи' });
     }
 
