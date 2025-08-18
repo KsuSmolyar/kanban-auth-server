@@ -134,7 +134,7 @@ const authenticate = (req, res, next) => {
 
 // ================= WebSocket =================
 const server = require('http').createServer(app);
-const { WebSocketServer } = require('ws');
+// const { WebSocketServer } = require('ws');
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', ws => {
