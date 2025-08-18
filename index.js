@@ -434,7 +434,7 @@ app.delete('/api/tasks/:id', authenticate, async(req, res) => {
         t.created_at,
         t.updated_at
       FROM tasks t
-      JOIN users u ON t.author_id = u.id
+      JOIN users u ON t.user_id = u.id
       ORDER BY t.created_at ASC`
     );
 
