@@ -380,19 +380,17 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
     }
 
     // Получаем актуальный список всех задач
-    const updatedTask = await pool.query(
+    const tasks = await pool.query(
       `SELECT 
         t.*,
         u.name AS author_name
       FROM tasks t
       JOIN users u ON t.user_id = u.id
-      WHERE t.id = $1`,
-      [taskId]
+      ORDER BY t.created_at ASC`
     );
 
-    const task = updatedTask.rows[0];
-    broadcast({ type: "task_updated", payload: task });
-    res.json(task);
+    broadcast({ type: "task_updated", payload: tasks });
+    res.json(tasks);
 
   } catch (err) {
     console.error(err);
