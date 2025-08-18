@@ -76,8 +76,8 @@ const signRefresh = (user, tokenId) =>
 const cookieOptions = (maxAgeMs) => {
   const base = {
     httpOnly: true,
-    secure: isProd,                   // в деве false, в проде true
-    sameSite: isProd ? 'none' : "lax", // в деве lax, в проде none
+    secure: true,                  
+    sameSite: 'none',
     maxAge: maxAgeMs,
   };
   return base;
