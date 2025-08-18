@@ -389,8 +389,8 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
       ORDER BY t.created_at ASC`
     );
 
-    broadcast({ type: "task_updated", payload: tasks });
-    res.json(tasks);
+    broadcast({ type: "task_updated", payload: tasks.rows });
+    res.json(tasks.rows);
 
   } catch (err) {
     console.error(err);
