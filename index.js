@@ -414,6 +414,8 @@ app.delete('/api/tasks/:id', authenticate, async(req, res) => {
       return res.status(404).json({ message: 'Задача не найдена' });
     }
 
+    const taskToDelete = check.rows[0];
+
     // Проверка прав — удалять может автор или админ
     if (check.rows[0].user_id !== req.user.id) {
       return res.status(403).json({ message: 'Нет прав на удаление задачи' });
@@ -422,24 +424,9 @@ app.delete('/api/tasks/:id', authenticate, async(req, res) => {
     // Удаляем задачу
     await pool.query(`DELETE FROM tasks WHERE id = $1`, [taskId]);
 
-    // Получаем актуальный список задач
-    const tasks = await pool.query(
-      `SELECT 
-        t.id,
-        t.title,
-        t.description,
-        t.status,
-        t.user_id,
-        u.name AS author_name,
-        t.created_at
-      FROM tasks t
-      JOIN users u ON t.user_id = u.id
-      ORDER BY t.created_at ASC`
-    );
+    broadcast({ type: "task_deleted", payload: taskToDelete });
 
-    broadcast({ type: "task_deleted", payload: tasks.rows });
-
-    res.status(200).json(tasks.rows);
+    res.status(200).json(taskToDelete);
   } catch (err) {
     console.error(err);
      res.status(500).json({ message: 'Ошибка сервера', error: err.message });
