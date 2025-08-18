@@ -11,6 +11,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const { Pool } = require('pg');
+const { WebSocketServer } = require('ws');
 
 // --- Конфигурация ---
 const PORT = process.env.PORT || 4000;
@@ -130,6 +131,28 @@ const authenticate = (req, res, next) => {
     return res.status(401).end();
   }
 };
+
+// ================= WebSocket =================
+const server = require('http').createServer(app);
+const { WebSocketServer } = require('ws');
+const wss = new WebSocketServer({ server });
+
+wss.on('connection', ws => {
+  console.log('Client connected via WebSocket');
+  ws.send(JSON.stringify({ type: 'connected', message: 'WebSocket connected' }));
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
+});
+
+// Функция для отправки сообщений всем клиентам
+function broadcast(data) {
+  const msg = JSON.stringify(data);
+  wss.clients.forEach(client => {
+    if (client.readyState === client.OPEN) client.send(msg);
+  });
+}
 
 // --- Роуты ---
 app.post('/api/auth/register', authLimiter, async (req, res) => {
@@ -314,7 +337,9 @@ app.post('/api/tasks', authenticate, async (req, res) => {
         JSON.stringify(Array.isArray(tags) ? tags : [])
       ]
     );
-    res.status(201).json(result.rows[0]);
+    const tasks = result.rows[0];
+    broadcast({ type: 'task_created', payload: tasks });
+    res.status(201).json(tasks);
   } catch (err) {
     // console.error(err);
     console.error('Ошибка при добавлении задачи:', err.message, err.stack);
@@ -355,7 +380,7 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
     }
 
     // Получаем актуальный список всех задач
-    const allTasks = await pool.query(
+    const updatedTask = await pool.query(
       `SELECT 
         t.*,
         u.name AS author_name
@@ -364,7 +389,8 @@ app.put('/api/tasks/:id', authenticate, async (req, res) => {
       ORDER BY t.created_at ASC`
     );
 
-    res.json(allTasks.rows);
+    broadcast({ type: "task_updated", payload: updatedTask.rows });
+    res.json(updatedTask.rows);
 
   } catch (err) {
     console.error(err);
@@ -409,6 +435,8 @@ app.delete('/api/tasks/:id', authenticate, async(req, res) => {
       JOIN users u ON t.author_id = u.id
       ORDER BY t.created_at ASC`
     );
+
+    broadcast({ type: "task_deleted", payload: tasks.rows });
 
     res.status(200).json(tasks.rows);
   } catch (err) {
@@ -484,6 +512,7 @@ app.post('/api/comments/:taskId', authenticate, async (req, res) => {
     `, [taskId]
     );
 
+    broadcast({ type: "comment_created", payload: commentsResult.rows });
     res.status(201).json(commentsResult.rows);
   } catch (err) {
     console.error(err);
@@ -538,6 +567,7 @@ app.delete('/api/comments/:taskId/:commentId', authenticate, async (req, res) =>
       [taskId]
     );
 
+    broadcast({ type: "comment_deleted", payload: comments.rows });
     res.status(200).json(comments.rows);
   } catch (err) {
     console.error(err);
@@ -545,6 +575,6 @@ app.delete('/api/comments/:taskId/:commentId', authenticate, async (req, res) =>
   }
 });
 
-app.listen(PORT,'0.0.0.0', () => {
+server.listen(PORT,'0.0.0.0', () => {
   console.log(`Auth server started on http://localhost:${PORT} (NODE_ENV=${NODE_ENV})`);
 });
