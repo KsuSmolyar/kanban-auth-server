@@ -337,8 +337,8 @@ app.post('/api/tasks', authenticate, async (req, res) => {
         JSON.stringify(Array.isArray(tags) ? tags : [])
       ]
     );
-    const tasks = result.rows[0];
-    broadcast({ type: 'task_created', payload: tasks });
+    const tasks = result.rows;
+    broadcast({ type: 'task_created', payload: tasks[0] });
     res.status(201).json(tasks);
   } catch (err) {
     // console.error(err);
