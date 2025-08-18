@@ -429,7 +429,7 @@ app.delete('/api/tasks/:id', authenticate, async(req, res) => {
         t.title,
         t.description,
         t.status,
-        t.author_id,
+        t.user_id,
         u.name AS author_name,
         t.created_at,
         t.updated_at
